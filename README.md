@@ -1,15 +1,16 @@
-
 # BERT Duplicate Question Detector
 
 A reproducible NLP and machine learning pipeline for identifying semantically duplicate questions using fine-tuned DistilBERT, benchmarked against classical TF-IDF and logistic regression models.
 
-The project covers leakage-aware data preparation, transformer fine-tuning, validation-based threshold optimisation, held-out evaluation, component-aware statistical uncertainty analysis, error analysis, local inference and automated testing.
+The project covers leakage-aware data preparation, transformer fine-tuning, validation-based threshold optimisation, held-out evaluation, component-aware statistical uncertainty analysis, qualitative error analysis, local inference and automated testing.
 
 ## Key Findings
 
 - **DistilBERT outperformed the strongest classical baseline on ranking metrics.** Compared with enhanced TF-IDF, average precision improved by 0.1251 (95% CI: [0.0695, 0.1827]) and ROC-AUC improved by 0.0836 (95% CI: [0.0515, 0.1163]). Both paired component-bootstrap confidence intervals exclude zero.
 - **The F1 improvement was not statistically established.** DistilBERT achieved an observed F1 improvement of 0.0362 over enhanced TF-IDF, but the 95% confidence interval of [-0.0012, 0.0740] includes zero.
-- **Error analysis identified sensitivity to meaning-changing numerical differences.** The model produced 110 false positives and 62 false negatives. Numerical substitutions are an observed failure example, not yet an established dominant error category.
+- **Qualitative error analysis identified scope and intent differences as the most frequent category among sampled false positives.** Of 30 sampled false positives, 18 (60.0%) involved scope or intent differences.
+- **Missed paraphrases were the most frequent category among sampled false negatives.** Of 30 sampled false negatives, 14 (46.7%) were classified as missed paraphrases.
+- **Some apparent model errors may reflect dataset-label ambiguity.** Across 60 sampled errors, 17 were assessed as ambiguous and 9 as possible dataset-label errors. These assessments were AI-assisted and have not been independently validated.
 
 ## Overview
 
@@ -18,6 +19,7 @@ Duplicate question detection is a binary classification task: determining whethe
 This project compares lexical similarity methods with transformer-based semantic classification using the Quora Question Pairs (QQP) dataset.
 
 **Models:**
+
 - Majority-class and all-positive reference baselines
 - TF-IDF cosine similarity + logistic regression
 - Enhanced TF-IDF features + logistic regression
@@ -139,6 +141,7 @@ To quantify uncertainty while accounting for exact-question overlap within the t
 Rather than resampling individual question pairs independently, the procedure resamples all 722 test-set connected components with replacement. Every selected component contributes all of its question pairs, preserving the observed within-component structure.
 
 The procedure uses:
+
 - 5,000 bootstrap replicates
 - A fixed random seed of 42
 - The same sampled components for all models in each replicate
@@ -192,23 +195,137 @@ The repository includes:
 - `results/evaluation_predictions.csv` — text-free aligned prediction records for all three score-based models
 - `results/plots/precision_recall_curves.png` — precision-recall comparison
 - `results/plots/roc_curves.png` — ROC comparison
+- `results/error_annotation_summary.csv` — aggregate qualitative error-analysis counts
 
 The text-free prediction file contains pair indices, component identifiers, true labels, model scores and binary predictions. It enables the statistical analysis to be reproduced without retraining the models or redistributing the question text.
 
+The error-annotation summary contains only aggregate counts and percentages. Question-level annotation data is retained locally.
+
 ## Error Analysis
 
-DistilBERT produced:
+DistilBERT produced the following errors on the 750-pair held-out test set:
 
 - **110 false positives**
 - **62 false negatives**
 
-One false positive involved questions about increasing IQ to 100 versus 180, illustrating difficulty recognising a meaning-changing numerical difference despite strong lexical similarity.
+A reproducible sample of 60 errors was examined to investigate the semantic characteristics of incorrect predictions.
 
-This example identifies a potential robustness weakness, but a systematic categorisation of errors is still needed to determine how frequently numerical substitutions, entity changes, negation, ambiguity and possible label noise contribute to failures.
+The sample contained:
 
-Model scores are uncalibrated softmax outputs and should not be interpreted as reliable probabilities.
+- 30 false positives sampled from the 110 available false positives
+- 30 false negatives sampled from the 62 available false negatives
+- A fixed sampling seed of 42
 
-Question-level predictions and error-analysis records are retained locally rather than committed to the repository.
+Each question pair received two annotations:
+
+1. **Label assessment:** Whether the prediction appeared to be a clear model error, an ambiguous case or a possible dataset-label error.
+2. **Semantic category:** The main semantic relationship or difference between the two questions.
+
+The classifications were proposed with AI assistance and were not independently validated by human annotators. The analysis is therefore exploratory.
+
+### Label Assessment
+
+| Assessment | False positives | False negatives | Total |
+|---|---:|---:|---:|
+| Clear model error | 21 (70.0%) | 13 (43.3%) | 34 |
+| Ambiguous | 6 (20.0%) | 11 (36.7%) | 17 |
+| Possible dataset-label error | 3 (10.0%) | 6 (20.0%) | 9 |
+| **Total** | **30** | **30** | **60** |
+
+Among sampled false positives, 21 of 30 were classified as clear model errors.
+
+Among sampled false negatives, 13 of 30 were classified as clear model errors, while 17 were classified as ambiguous or possible dataset-label errors.
+
+This difference suggests that uncertainty about question equivalence and dataset labels may contribute to the observed false-negative count. However, these judgments have not been independently verified and do not establish that the original QQP labels are incorrect.
+
+### Semantic Error Categories
+
+| Semantic category | False positives | False negatives |
+|---|---:|---:|
+| Scope/intent difference | 18 (60.0%) | 12 (40.0%) |
+| Missed paraphrase | 3 (10.0%) | 14 (46.7%) |
+| Entity/referent difference | 4 (13.3%) | 3 (10.0%) |
+| Numerical/identifier difference | 4 (13.3%) | 0 (0.0%) |
+| Negation/logical difference | 1 (3.3%) | 0 (0.0%) |
+| Implicit semantic equivalence | 0 (0.0%) | 1 (3.3%) |
+| **Total** | **30 (100%)** | **30 (100%)** |
+
+#### False Positives: Scope and Intent Differences
+
+Scope and intent differences were the most frequently assigned semantic category among false positives, accounting for 18 of the 30 sampled cases.
+
+For example, the model incorrectly classified the following questions as duplicates:
+
+- "What is the difference between tomato sauce, tomato ketchup and tomato condiment?"
+- "What is the difference between tomato sauce and tomato ketchup?"
+
+Although the questions are closely related, the first explicitly includes an additional category.
+
+Other observed false positives involved changes to numerical values, identifiers and referenced entities.
+
+Examples included:
+
+- Heathrow Terminal 3 versus Terminal 5
+- Completing a JEE syllabus in two months versus one year
+- An eight-metre structural span versus a six-metre span
+
+These examples illustrate how high lexical similarity can coexist with differences that change the requested information.
+
+#### False Negatives: Missed Paraphrases
+
+Missed paraphrases were the most frequently assigned category among false negatives, accounting for 14 of the 30 sampled cases.
+
+For example:
+
+- "How are long distance relationships maintained?"
+- "How will long distance relationship work?"
+
+The two questions express substantially similar intentions using different wording, but the model predicted that they were not duplicates.
+
+Another example involved:
+
+- "What are web applications?"
+- "What is web application?"
+
+The model failed to classify this near-identical singular/plural variation as a duplicate.
+
+These cases suggest that some semantically equivalent questions remain difficult for the fitted classifier at its validation-selected operating threshold.
+
+#### Possible Dataset-Label Problems
+
+Nine of the 60 sampled errors were flagged as possible dataset-label errors.
+
+For example, one pair labelled as a duplicate asked whether hamsters can eat cucumber versus whether hamsters should eat popcorn.
+
+Another pair compared the effects of different historical earthquakes.
+
+These examples raise questions about the consistency of the dataset's duplicate labels. However, the annotations are preliminary assessments rather than confirmed label corrections.
+
+### Interpretation and Limitations
+
+The qualitative analysis provides additional context beyond accuracy, F1, average precision and ROC-AUC, but several limitations are important:
+
+- **Balanced error sampling:** The sample contains equal numbers of false positives and false negatives, unlike the full test-set error distribution. Reported percentages describe each sampled error type separately.
+- **Sample size:** Only 60 of the 172 test errors were annotated.
+- **Annotation reliability:** Categories were proposed with AI assistance, without independent human validation or inter-annotator agreement measurement.
+- **Label uncertainty:** Possible dataset-label errors have not been confirmed through independent adjudication.
+- **Descriptive categories:** Semantic categories describe question-pair characteristics, not necessarily the causal mechanisms underlying model predictions.
+- **Model scores:** The reported softmax scores have not been calibrated and should not be interpreted as reliable probabilities.
+
+The results are useful for identifying candidate weaknesses and motivating further robustness testing, but they should not be treated as definitive estimates of model failure mechanisms.
+
+### Reproducibility and Data Handling
+
+The qualitative error-analysis workflow uses:
+
+- `prepare_error_annotations.py` — creates the reproducible 60-example sample
+- `annotate_errors.py` — provides an interactive annotation interface
+- `summary_error_annotations.py` — validates annotations and generates aggregate category counts
+- `results/error_annotation_summary.csv` — stores the aggregate results
+
+The local file `results/error_annotation_sample.csv` contains question-level text and annotations and is excluded from Git.
+
+The committed summary contains aggregate category counts and percentages without redistributing the original question text.
 
 ## Installation and Usage
 
@@ -260,7 +377,31 @@ python statistical_evaluation.py
 
 This verifies test-example alignment, reconstructs connected components, calculates paired component-bootstrap confidence intervals, performs conventional McNemar tests, exports text-free prediction records and generates precision-recall and ROC plots.
 
-### 5. Run inference
+### 5. Run qualitative error analysis
+
+Generate the reproducible sample:
+
+```bash
+python prepare_error_annotations.py
+```
+
+Annotate the sampled question pairs:
+
+```bash
+python annotate_errors.py
+```
+
+After all 60 examples have been annotated, generate the summary:
+
+```bash
+python summary_error_annotations.py
+```
+
+The summary script validates the number of examples, annotation categories, unique identifiers and balance between false positives and false negatives before exporting aggregate results.
+
+The question-level annotation CSV is retained locally and excluded from Git.
+
+### 6. Run inference
 
 ```bash
 python predict.py --q1 "How do neural networks learn?" --q2 "How are neural networks trained?"
@@ -274,7 +415,7 @@ Threshold: 0.15
 Prediction: Duplicate
 ```
 
-### 6. Run tests
+### 7. Run tests
 
 ```bash
 python -m pytest -q
@@ -286,11 +427,13 @@ Unit tests also run automatically through GitHub Actions on pushes and pull requ
 
 ## Reproducibility
 
-The repository includes dataset preparation, baseline training, transformer fine-tuning, evaluation, statistical analysis, inference and testing code, along with pinned dependencies and checkpoint configuration tracking.
+The repository includes dataset preparation, baseline training, transformer fine-tuning, evaluation, statistical analysis, qualitative error analysis, inference and testing code, along with pinned dependencies and checkpoint configuration tracking.
 
-Aggregate evaluation metrics, plots and text-free prediction records are committed so the statistical comparisons can be inspected and reproduced without retraining.
+Aggregate evaluation metrics, plots, text-free prediction records and aggregate error-annotation summaries are intended to be committed so the analyses can be inspected without retraining.
 
-Dataset files, question-level prediction records and trained weights are excluded from Git. Reproducing the complete training experiment requires downloading the dataset and training the model locally.
+Dataset files, question-level prediction records, question-level annotation records and trained weights are excluded from Git. Reproducing the complete training experiment requires downloading the dataset and training the model locally.
+
+Reproducing the qualitative annotation summary additionally requires completing the annotation process. The annotation decisions are not automatically regenerated from the model predictions.
 
 Exact results may vary with hardware, dependency versions and random-number generation.
 
@@ -300,7 +443,8 @@ Exact results may vary with hardware, dependency versions and random-number gene
 - **Class balance:** Duplicate prevalence varies across the training, validation and test partitions.
 - **Generalisation:** Evaluation is limited to QQP-style questions.
 - **Semantic ambiguity:** Some question pairs have subjective or unclear duplicate labels.
-- **Robustness:** Numerical differences and subtle changes in meaning can produce incorrect classifications; error categories have not yet been systematically quantified.
+- **Qualitative annotation reliability:** The 60 sampled error annotations were AI-assisted and have not been independently validated.
+- **Robustness:** Scope changes, numerical differences and subtle changes in meaning can produce incorrect classifications. The qualitative analysis is exploratory and does not establish causal failure mechanisms.
 - **Statistical uncertainty:** The paired component-bootstrap interval for the F1 improvement over enhanced TF-IDF includes zero.
 - **Dependence:** Component-aware resampling preserves exact-question overlap within the test set but does not account for every possible source of dependence.
 - **Training variability:** Multiple training seeds and alternative data samples have not been evaluated.

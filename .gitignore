@@ -34,3 +34,5 @@ results/false_negatives.csv
 
 # Local environment snapshot
 environment-lock.txt
+
+results/error_annotation_sample.csv

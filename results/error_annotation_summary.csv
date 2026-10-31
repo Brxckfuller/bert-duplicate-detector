@@ -1,0 +1,14 @@
+error_type,label_assessment,semantic_category,count,percentage_within_error_type
+false_negative,ambiguous,implicit_semantic_equivalence,1,3.33
+false_negative,ambiguous,missed_paraphrase,1,3.33
+false_negative,ambiguous,scope_intent_difference,9,30.0
+false_negative,clear_model_error,missed_paraphrase,13,43.33
+false_negative,possible_label_error,entity_referent_difference,3,10.0
+false_negative,possible_label_error,scope_intent_difference,3,10.0
+false_positive,ambiguous,entity_referent_difference,1,3.33
+false_positive,ambiguous,scope_intent_difference,5,16.67
+false_positive,clear_model_error,entity_referent_difference,3,10.0
+false_positive,clear_model_error,negation_logical_difference,1,3.33
+false_positive,clear_model_error,numerical_identifier_difference,4,13.33
+false_positive,clear_model_error,scope_intent_difference,13,43.33
+false_positive,possible_label_error,missed_paraphrase,3,10.0
