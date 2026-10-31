@@ -3,11 +3,13 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import pandas as pd
 
 from scipy.stats import binomtest
 from sklearn.metrics import (
+    accuracy_score,
     average_precision_score,
     f1_score,
     precision_recall_curve,
@@ -32,16 +34,16 @@ def load_predictions():
         RESULTS_DIR / "test_predictions.csv"
     )
 
+    columns = ["text1", "text2", "label"]
+
     if len(baseline) != len(bert):
-        raise ValueError("Prediction files have different row counts.")
-
-    comparison_columns = ["text1", "text2", "label"]
-
-    if not baseline[comparison_columns].equals(
-        bert[comparison_columns]
-    ):
         raise ValueError(
-            "Question pairs or labels do not match between files."
+            "Prediction files have different row counts."
+        )
+
+    if not baseline[columns].equals(bert[columns]):
+        raise ValueError(
+            "Question pairs or labels do not match."
         )
 
     print(f"Verified alignment of {len(bert)} test examples.")
@@ -49,15 +51,37 @@ def load_predictions():
     return baseline, bert
 
 
-def bootstrap_f1(y_true, predictions, indices):
-    return np.array([
-        f1_score(
-            y_true[sample],
-            predictions[sample],
-            zero_division=0,
-        )
-        for sample in indices
+def assign_component_ids(df):
+    graph = nx.Graph()
+
+    graph.add_edges_from(
+        zip(df["text1"], df["text2"])
+    )
+
+    node_to_component = {}
+
+    for component_id, nodes in enumerate(
+        nx.connected_components(graph)
+    ):
+        for node in nodes:
+            node_to_component[node] = component_id
+
+    component_ids = np.array([
+        node_to_component[q1]
+        for q1 in df["text1"]
     ])
+
+    for q1, q2, component_id in zip(
+        df["text1"],
+        df["text2"],
+        component_ids,
+    ):
+        if node_to_component[q2] != component_id:
+            raise ValueError(
+                "Question pair crosses connected components."
+            )
+
+    return component_ids
 
 
 def confidence_interval(values):
@@ -69,6 +93,48 @@ def confidence_interval(values):
     ]
 
 
+def bootstrap_indices(component_ids, rng):
+    unique_components = np.unique(component_ids)
+
+    component_rows = [
+        np.flatnonzero(component_ids == component)
+        for component in unique_components
+    ]
+
+    n_components = len(component_rows)
+
+    for _ in range(N_BOOTSTRAPS):
+        sampled_components = rng.integers(
+            0, n_components, size=n_components
+        )
+
+        yield np.concatenate([
+            component_rows[index]
+            for index in sampled_components
+        ])
+
+
+def calculate_metrics(y_true, predictions, scores):
+    return {
+        "accuracy": float(
+            accuracy_score(y_true, predictions)
+        ),
+        "f1": float(
+            f1_score(
+                y_true,
+                predictions,
+                zero_division=0,
+            )
+        ),
+        "average_precision": float(
+            average_precision_score(y_true, scores)
+        ),
+        "roc_auc": float(
+            roc_auc_score(y_true, scores)
+        ),
+    }
+
+
 def mcnemar_test(y_true, predictions_a, predictions_b):
     correct_a = predictions_a == y_true
     correct_b = predictions_b == y_true
@@ -78,20 +144,27 @@ def mcnemar_test(y_true, predictions_a, predictions_b):
 
     discordant = a_only + b_only
 
-    if discordant == 0:
-        p_value = 1.0
-    else:
-        p_value = binomtest(
-            min(a_only, b_only),
-            n=discordant,
-            p=0.5,
-            alternative="two-sided",
-        ).pvalue
+    p_value = (
+        float(
+            binomtest(
+                min(a_only, b_only),
+                n=discordant,
+                p=0.5,
+                alternative="two-sided",
+            ).pvalue
+        )
+        if discordant
+        else 1.0
+    )
 
     return {
         "a_correct_b_wrong": a_only,
         "a_wrong_b_correct": b_only,
-        "p_value": float(p_value),
+        "p_value": p_value,
+        "note": (
+            "Conventional pair-level McNemar test; "
+            "does not adjust for component clustering."
+        ),
     }
 
 
@@ -99,9 +172,26 @@ def main():
     baseline, bert = load_predictions()
 
     y_true = bert["label"].to_numpy(dtype=int)
+    component_ids = assign_component_ids(bert)
+
+    unique_components, component_sizes = np.unique(
+        component_ids,
+        return_counts=True,
+    )
+
+    print(
+        f"Connected components: {len(unique_components)}"
+    )
+    print(
+        f"Largest component: {component_sizes.max()} pairs"
+    )
+    print(
+        "Pairs in multi-pair components:",
+        int(component_sizes[component_sizes > 1].sum()),
+    )
 
     models = {
-        "TF-IDF cosine": {
+        "tfidf_cosine": {
             "predictions": baseline[
                 "tfidf_cosine_prediction"
             ].to_numpy(dtype=int),
@@ -109,7 +199,7 @@ def main():
                 "tfidf_cosine_score"
             ].to_numpy(dtype=float),
         },
-        "Enhanced TF-IDF": {
+        "tfidf_enhanced": {
             "predictions": baseline[
                 "tfidf_enhanced_prediction"
             ].to_numpy(dtype=int),
@@ -117,7 +207,7 @@ def main():
                 "tfidf_enhanced_score"
             ].to_numpy(dtype=float),
         },
-        "DistilBERT": {
+        "distilbert": {
             "predictions": bert[
                 "prediction"
             ].to_numpy(dtype=int),
@@ -127,58 +217,155 @@ def main():
         },
     }
 
-    rng = np.random.default_rng(SEED)
+    metrics_to_bootstrap = [
+        "f1",
+        "average_precision",
+        "roc_auc",
+    ]
 
-    bootstrap_indices = rng.integers(
-        0,
-        len(y_true),
-        size=(N_BOOTSTRAPS, len(y_true)),
-    )
-
-    results = {}
-    bootstrap_samples = {}
+    results = {
+        "bootstrap_method": "paired_component_bootstrap",
+        "bootstrap_resamples": N_BOOTSTRAPS,
+        "seed": SEED,
+        "test_pairs": len(y_true),
+        "test_components": len(unique_components),
+        "component_summary": {
+            "largest_component_pairs": int(
+                component_sizes.max()
+            ),
+            "multi_pair_components": int(
+                np.sum(component_sizes > 1)
+            ),
+            "pairs_in_multi_pair_components": int(
+                component_sizes[component_sizes > 1].sum()
+            ),
+        },
+        "models": {},
+        "comparisons": {},
+    }
 
     for name, data in models.items():
-        predictions = data["predictions"]
-        scores = data["scores"]
-
-        samples = bootstrap_f1(
-            y_true, predictions, bootstrap_indices
-        )
-        bootstrap_samples[name] = samples
-
-        results[name] = {
-            "f1": float(
-                f1_score(y_true, predictions)
-            ),
-            "f1_ci_95": confidence_interval(samples),
-            "average_precision": float(
-                average_precision_score(y_true, scores)
-            ),
-            "roc_auc": float(
-                roc_auc_score(y_true, scores)
-            ),
-        }
-
-    difference = (
-        bootstrap_samples["DistilBERT"]
-        - bootstrap_samples["Enhanced TF-IDF"]
-    )
-
-    results["paired_comparison"] = {
-        "f1_difference": (
-            results["DistilBERT"]["f1"]
-            - results["Enhanced TF-IDF"]["f1"]
-        ),
-        "f1_difference_ci_95": confidence_interval(
-            difference
-        ),
-        "mcnemar": mcnemar_test(
+        results["models"][name] = calculate_metrics(
             y_true,
-            models["DistilBERT"]["predictions"],
-            models["Enhanced TF-IDF"]["predictions"],
-        ),
+            data["predictions"],
+            data["scores"],
+        )
+
+    bootstrap_results = {
+        name: {
+            metric: []
+            for metric in metrics_to_bootstrap
+        }
+        for name in models
     }
+
+    rng = np.random.default_rng(SEED)
+
+    for indices in bootstrap_indices(component_ids, rng):
+        sampled_y = y_true[indices]
+
+        if len(np.unique(sampled_y)) < 2:
+            continue
+
+        for name, data in models.items():
+            sampled_predictions = data[
+                "predictions"
+            ][indices]
+            sampled_scores = data["scores"][indices]
+
+            sampled_metrics = calculate_metrics(
+                sampled_y,
+                sampled_predictions,
+                sampled_scores,
+            )
+
+            for metric in metrics_to_bootstrap:
+                bootstrap_results[name][metric].append(
+                    sampled_metrics[metric]
+                )
+
+    for name in models:
+        for metric in metrics_to_bootstrap:
+            samples = bootstrap_results[name][metric]
+
+            results["models"][name][
+                f"{metric}_ci_95"
+            ] = confidence_interval(samples)
+
+    comparisons = [
+        ("distilbert", "tfidf_enhanced"),
+        ("distilbert", "tfidf_cosine"),
+    ]
+
+    for model_a, model_b in comparisons:
+        comparison_name = f"{model_a}_vs_{model_b}"
+
+        comparison = {}
+
+        for metric in metrics_to_bootstrap:
+            observed_difference = (
+                results["models"][model_a][metric]
+                - results["models"][model_b][metric]
+            )
+
+            bootstrap_difference = (
+                np.asarray(
+                    bootstrap_results[model_a][metric]
+                )
+                - np.asarray(
+                    bootstrap_results[model_b][metric]
+                )
+            )
+
+            comparison[metric] = {
+                "difference": float(observed_difference),
+                "ci_95": confidence_interval(
+                    bootstrap_difference
+                ),
+            }
+
+        comparison["mcnemar"] = mcnemar_test(
+            y_true,
+            models[model_a]["predictions"],
+            models[model_b]["predictions"],
+        )
+
+        results["comparisons"][
+            comparison_name
+        ] = comparison
+
+    # Save text-free prediction records
+    prediction_output = pd.DataFrame({
+        "pair_index": np.arange(len(y_true)),
+        "component_id": component_ids,
+        "label": y_true,
+        "tfidf_cosine_score": models[
+            "tfidf_cosine"
+        ]["scores"],
+        "tfidf_cosine_prediction": models[
+            "tfidf_cosine"
+        ]["predictions"],
+        "tfidf_enhanced_score": models[
+            "tfidf_enhanced"
+        ]["scores"],
+        "tfidf_enhanced_prediction": models[
+            "tfidf_enhanced"
+        ]["predictions"],
+        "distilbert_score": models[
+            "distilbert"
+        ]["scores"],
+        "distilbert_prediction": models[
+            "distilbert"
+        ]["predictions"],
+    })
+
+    prediction_path = (
+        RESULTS_DIR / "evaluation_predictions.csv"
+    )
+    prediction_output.to_csv(
+        prediction_path,
+        index=False,
+    )
 
     PLOTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -187,10 +374,13 @@ def main():
 
     for name, data in models.items():
         precision, recall, _ = precision_recall_curve(
-            y_true, data["scores"]
+            y_true,
+            data["scores"],
         )
 
-        ap = results[name]["average_precision"]
+        ap = results["models"][name][
+            "average_precision"
+        ]
 
         plt.plot(
             recall,
@@ -198,12 +388,20 @@ def main():
             label=f"{name} (AP={ap:.3f})",
         )
 
+    plt.axhline(
+        y=y_true.mean(),
+        linestyle="--",
+        color="gray",
+        label=f"Positive prevalence ({y_true.mean():.3f})",
+    )
+
     plt.xlabel("Recall")
     plt.ylabel("Precision")
     plt.title("Precision-Recall Curves")
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
+
     plt.savefig(
         PLOTS_DIR / "precision_recall_curves.png",
         dpi=200,
@@ -215,10 +413,11 @@ def main():
 
     for name, data in models.items():
         fpr, tpr, _ = roc_curve(
-            y_true, data["scores"]
+            y_true,
+            data["scores"],
         )
 
-        auc = results[name]["roc_auc"]
+        auc = results["models"][name]["roc_auc"]
 
         plt.plot(
             fpr,
@@ -226,7 +425,12 @@ def main():
             label=f"{name} (AUC={auc:.3f})",
         )
 
-    plt.plot([0, 1], [0, 1], linestyle="--")
+    plt.plot(
+        [0, 1],
+        [0, 1],
+        linestyle="--",
+        color="gray",
+    )
 
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
@@ -234,50 +438,56 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
+
     plt.savefig(
         PLOTS_DIR / "roc_curves.png",
         dpi=200,
     )
     plt.close()
 
-    output_path = RESULTS_DIR / "statistical_evaluation.json"
+    output_path = (
+        RESULTS_DIR / "statistical_evaluation.json"
+    )
 
     with open(output_path, "w") as file:
         json.dump(results, file, indent=2)
 
-    print("\nSTATISTICAL EVALUATION")
-    print("=" * 45)
+    print("\nCOMPONENT-AWARE STATISTICAL EVALUATION")
+    print("=" * 50)
 
-    for name in models:
-        metrics = results[name]
+    for name, metrics in results["models"].items():
+        print(f"\n{name.upper()}")
 
-        print(f"\n{name}")
-        print(f"F1: {metrics['f1']:.4f}")
-        print(f"95% CI: {metrics['f1_ci_95']}")
+        for metric in metrics_to_bootstrap:
+            print(
+                f"{metric}: {metrics[metric]:.4f} "
+                f"95% CI: {metrics[f'{metric}_ci_95']}"
+            )
+
+    for name, comparison in results[
+        "comparisons"
+    ].items():
+        print(f"\n{name.upper()}")
+        print("-" * 50)
+
+        for metric in metrics_to_bootstrap:
+            values = comparison[metric]
+
+            print(
+                f"{metric} difference: "
+                f"{values['difference']:.4f}"
+            )
+            print(
+                f"95% CI: {values['ci_95']}"
+            )
+
         print(
-            f"Average precision: "
-            f"{metrics['average_precision']:.4f}"
+            "McNemar p-value:",
+            comparison["mcnemar"]["p_value"],
         )
-        print(f"ROC-AUC: {metrics['roc_auc']:.4f}")
-
-    comparison = results["paired_comparison"]
-
-    print("\nDISTILBERT VS ENHANCED TF-IDF")
-    print("-" * 45)
-    print(
-        f"F1 difference: "
-        f"{comparison['f1_difference']:.4f}"
-    )
-    print(
-        f"95% CI for difference: "
-        f"{comparison['f1_difference_ci_95']}"
-    )
-    print(
-        f"McNemar p-value: "
-        f"{comparison['mcnemar']['p_value']:.6f}"
-    )
 
     print(f"\nSaved results to {output_path}")
+    print(f"Saved predictions to {prediction_path}")
     print(f"Saved plots to {PLOTS_DIR}")
 
 

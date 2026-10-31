@@ -28,6 +28,7 @@ data/
 .ipynb_checkpoints/
 # Local prediction and error-analysis records
 results/*predictions.csv
+!results/evaluation_predictions.csv
 results/false_positives.csv
 results/false_negatives.csv
 

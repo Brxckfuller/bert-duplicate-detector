@@ -1,41 +1,128 @@
 {
-  "TF-IDF cosine": {
-    "f1": 0.6699266503667481,
-    "f1_ci_95": [
-      0.6330374228166735,
-      0.7063022378583055
-    ],
-    "average_precision": 0.5129890006236484,
-    "roc_auc": 0.6933477595242301
+  "bootstrap_method": "paired_component_bootstrap",
+  "bootstrap_resamples": 5000,
+  "seed": 42,
+  "test_pairs": 750,
+  "test_components": 722,
+  "component_summary": {
+    "largest_component_pairs": 4,
+    "multi_pair_components": 24,
+    "pairs_in_multi_pair_components": 52
   },
-  "Enhanced TF-IDF": {
-    "f1": 0.7032085561497327,
-    "f1_ci_95": [
-      0.6648793565683646,
-      0.739946380697051
-    ],
-    "average_precision": 0.6525021271565605,
-    "roc_auc": 0.7740608255314138
+  "models": {
+    "tfidf_cosine": {
+      "accuracy": 0.64,
+      "f1": 0.6699266503667481,
+      "average_precision": 0.5129890006236484,
+      "roc_auc": 0.6933477595242301,
+      "f1_ci_95": [
+        0.6310555845305265,
+        0.7052181701082799
+      ],
+      "average_precision_ci_95": [
+        0.46167781558350224,
+        0.5731081100868604
+      ],
+      "roc_auc_ci_95": [
+        0.655036703495007,
+        0.7300656186097555
+      ]
+    },
+    "tfidf_enhanced": {
+      "accuracy": 0.704,
+      "f1": 0.7032085561497327,
+      "average_precision": 0.6525021271565605,
+      "roc_auc": 0.7740608255314138,
+      "f1_ci_95": [
+        0.6639558031382783,
+        0.7396555246352566
+      ],
+      "average_precision_ci_95": [
+        0.5932906593657026,
+        0.7111005579695058
+      ],
+      "roc_auc_ci_95": [
+        0.7409357355085229,
+        0.806145684182518
+      ]
+    },
+    "distilbert": {
+      "accuracy": 0.7706666666666667,
+      "f1": 0.7393939393939394,
+      "average_precision": 0.7776306415077172,
+      "roc_auc": 0.8576296885120415,
+      "f1_ci_95": [
+        0.6994875728009284,
+        0.7767863612836439
+      ],
+      "average_precision_ci_95": [
+        0.724758206899529,
+        0.829849350046217
+      ],
+      "roc_auc_ci_95": [
+        0.8309016393665455,
+        0.8829217501726282
+      ]
+    }
   },
-  "DistilBERT": {
-    "f1": 0.7393939393939394,
-    "f1_ci_95": [
-      0.7012578616352201,
-      0.7766742659012396
-    ],
-    "average_precision": 0.7776306415077172,
-    "roc_auc": 0.8576296885120415
-  },
-  "paired_comparison": {
-    "f1_difference": 0.036185383244206726,
-    "f1_difference_ci_95": [
-      -0.0012040514150228176,
-      0.07494960469436125
-    ],
-    "mcnemar": {
-      "a_correct_b_wrong": 121,
-      "a_wrong_b_correct": 71,
-      "p_value": 0.000378905476239998
+  "comparisons": {
+    "distilbert_vs_tfidf_enhanced": {
+      "f1": {
+        "difference": 0.036185383244206726,
+        "ci_95": [
+          -0.0012351537169239366,
+          0.07402459167846986
+        ]
+      },
+      "average_precision": {
+        "difference": 0.12512851435115668,
+        "ci_95": [
+          0.06945467441190761,
+          0.18266179584571185
+        ]
+      },
+      "roc_auc": {
+        "difference": 0.08356886298062771,
+        "ci_95": [
+          0.05151263652854213,
+          0.11627999971087483
+        ]
+      },
+      "mcnemar": {
+        "a_correct_b_wrong": 121,
+        "a_wrong_b_correct": 71,
+        "p_value": 0.000378905476239998,
+        "note": "Conventional pair-level McNemar test; does not adjust for component clustering."
+      }
+    },
+    "distilbert_vs_tfidf_cosine": {
+      "f1": {
+        "difference": 0.06946728902719124,
+        "ci_95": [
+          0.029853900125343922,
+          0.10959896665068218
+        ]
+      },
+      "average_precision": {
+        "difference": 0.26464164088406883,
+        "ci_95": [
+          0.20405870054346242,
+          0.32087102290672764
+        ]
+      },
+      "roc_auc": {
+        "difference": 0.16428192898781135,
+        "ci_95": [
+          0.12412326708584752,
+          0.20474619169655947
+        ]
+      },
+      "mcnemar": {
+        "a_correct_b_wrong": 170,
+        "a_wrong_b_correct": 72,
+        "p_value": 2.584061026925255e-10,
+        "note": "Conventional pair-level McNemar test; does not adjust for component clustering."
+      }
     }
   }
 }
