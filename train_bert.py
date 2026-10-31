@@ -24,6 +24,18 @@ OUTPUT_DIR = Path("models/distilbert-best")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
+TRAINING_CONFIG = {
+    "seed": SEED,
+    "base_model": MODEL_NAME,
+    "max_length": MAX_LENGTH,
+    "batch_size": BATCH_SIZE,
+    "learning_rate": LEARNING_RATE,
+    "epochs": EPOCHS,
+    "optimizer": "AdamW",
+    "checkpoint_selection": "validation_f1_at_0.5_threshold",
+}
+
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -194,6 +206,15 @@ def main():
 
             model.save_pretrained(OUTPUT_DIR)
             tokenizer.save_pretrained(OUTPUT_DIR)
+
+            checkpoint_metadata = {
+                **TRAINING_CONFIG,
+                "best_epoch": epoch + 1,
+                "best_validation_f1": float(best_f1),
+            }
+
+            with open(OUTPUT_DIR / "training_config.json", "w") as file:
+                json.dump(checkpoint_metadata, file, indent=2)
 
             print(f"Saved new best model (F1={best_f1:.4f})")
 
