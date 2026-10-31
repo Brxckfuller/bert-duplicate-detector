@@ -9,14 +9,14 @@ from torch.utils.data import DataLoader
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from train_bert import QuestionPairDataset
-
+from config import DUPLICATE_THRESHOLD
 
 MODEL_DIR = Path("models/distilbert-best")
 OUTPUT_DIR = Path("results")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 BATCH_SIZE = 8
-THRESHOLD = 0.15
+THRESHOLD = DUPLICATE_THRESHOLD
 
 device = torch.device(
     "mps" if torch.backends.mps.is_available() else "cpu"

@@ -9,13 +9,18 @@ from transformers import (
 )
 
 
-MODEL_DIR = Path("models/distilbert-best")
-THRESHOLD = 0.15
-MAX_LENGTH = 128
+from config import MODEL_DIR, MAX_LENGTH, DUPLICATE_THRESHOLD
 
 
 class DuplicateQuestionDetector:
-    def __init__(self, model_dir=MODEL_DIR, threshold=THRESHOLD):
+    def __init__(
+            self,
+            model_dir=MODEL_DIR,
+            threshold=DUPLICATE_THRESHOLD,
+    ):
+        if not 0.0 <= threshold <= 1.0:
+            raise ValueError("Threshold must be between 0 and 1.")
+
         self.threshold = threshold
 
         self.device = torch.device(
