@@ -1,5 +1,6 @@
 
-from datasets import load_dataset
+import pandas as pd
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -9,60 +10,67 @@ from sklearn.metrics import (
     f1_score,
     confusion_matrix,
 )
-from sklearn.model_selection import train_test_split
 from sklearn.metrics.pairwise import paired_cosine_distances
 
 
-# 1. Load dataset
-dataset = load_dataset("SetFit/qqp", split="train[:5000]")
-df = dataset.to_pandas()
+# Load final question-disjoint partitions
+train_df = pd.read_csv("data/train.csv")
+val_df = pd.read_csv("data/val.csv")
+test_df = pd.read_csv("data/test.csv")
 
-# 2. Split data BEFORE fitting the vectorizer
-train_df, test_df = train_test_split(
-    df,
-    test_size=0.2,
-    random_state=42,
-    stratify=df["label"],
-)
-
-# 3. Convert text into TF-IDF vectors
+# Fit TF-IDF vocabulary using training data only
 vectorizer = TfidfVectorizer(
     max_features=10000,
     ngram_range=(1, 2),
 )
 
-train_questions = (
+vectorizer.fit(
     train_df["text1"].tolist()
     + train_df["text2"].tolist()
 )
 
-vectorizer.fit(train_questions)
 
-
-# 4. Calculate cosine similarity for each pair
 def get_similarity_features(data):
     q1 = vectorizer.transform(data["text1"])
     q2 = vectorizer.transform(data["text2"])
 
     similarity = 1 - paired_cosine_distances(q1, q2)
-
     return similarity.reshape(-1, 1)
 
 
 X_train = get_similarity_features(train_df)
+X_val = get_similarity_features(val_df)
 X_test = get_similarity_features(test_df)
 
 y_train = train_df["label"]
+y_val = val_df["label"]
 y_test = test_df["label"]
 
-# 5. Train logistic regression
+# Train baseline classifier
 model = LogisticRegression(random_state=42)
 model.fit(X_train, y_train)
 
-# 6. Evaluate
-predictions = model.predict(X_test)
+# Select classification threshold using validation F1
+val_probabilities = model.predict_proba(X_val)[:, 1]
 
-print("\nBASELINE RESULTS")
+thresholds = [i / 100 for i in range(10, 91, 5)]
+
+best_threshold = max(
+    thresholds,
+    key=lambda threshold: f1_score(
+        y_val,
+        (val_probabilities >= threshold).astype(int),
+        zero_division=0,
+    ),
+)
+
+print("Selected threshold:", best_threshold)
+
+# Evaluate once on held-out test set
+test_probabilities = model.predict_proba(X_test)[:, 1]
+predictions = (test_probabilities >= best_threshold).astype(int)
+
+print("\nTF-IDF BASELINE RESULTS")
 print("----------------------------")
 print("Accuracy:", round(accuracy_score(y_test, predictions), 4))
 print("Precision:", round(precision_score(y_test, predictions), 4))
@@ -71,33 +79,3 @@ print("F1 Score:", round(f1_score(y_test, predictions), 4))
 
 print("\nConfusion matrix:")
 print(confusion_matrix(y_test, predictions))
-
-
-# 7. Test on new questions
-def predict_duplicate(question1, question2):
-    pair = {
-        "text1": [question1],
-        "text2": [question2],
-    }
-
-    features = get_similarity_features(pair)
-    probability = model.predict_proba(features)[0][1]
-
-    print("\nQuestion 1:", question1)
-    print("Question 2:", question2)
-    print("Duplicate probability:", round(probability, 4))
-    print(
-        "Prediction:",
-        "Duplicate" if probability >= 0.5 else "Not duplicate"
-    )
-
-
-predict_duplicate(
-    "How do neural networks learn?",
-    "How does a neural network get trained?",
-)
-
-predict_duplicate(
-    "What is machine learning?",
-    "How do I cook pasta?",
-)
