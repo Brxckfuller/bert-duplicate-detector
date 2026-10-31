@@ -26,3 +26,10 @@ data/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+# Local prediction and error-analysis records
+results/*predictions.csv
+results/false_positives.csv
+results/false_negatives.csv
+
+# Local environment snapshot
+environment-lock.txt
