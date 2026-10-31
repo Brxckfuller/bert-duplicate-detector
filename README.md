@@ -421,7 +421,7 @@ Prediction: Duplicate
 python -m pytest -q
 ```
 
-The current local test suite contains **20 passing tests**, including checks for connected-component assignment, bootstrap cluster preservation, confidence intervals, classification metrics and McNemar's exact test.
+The current local test suite contains **30 passing tests**, including checks for connected-component assignment, bootstrap cluster preservation, confidence intervals, classification metrics, McNemar's exact test, and contrastive robustness benchmark structure and metric calculations.
 
 Unit tests also run automatically through GitHub Actions on pushes and pull requests to `main`. The integration test requires a locally trained checkpoint.
 
