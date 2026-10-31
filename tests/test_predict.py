@@ -1,5 +1,7 @@
 
 import pytest
+import json
+from unittest.mock import patch
 
 from predict import DuplicateQuestionDetector
 
@@ -61,3 +63,20 @@ def test_invalid_threshold(threshold):
     # Avoid loading a model by providing an invalid threshold
     with pytest.raises(ValueError):
         DuplicateQuestionDetector(threshold=threshold)
+
+
+def test_loads_threshold_from_checkpoint(tmp_path):
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    metadata = {"inference_threshold": 0.35}
+
+    with open(model_dir / "training_config.json", "w") as file:
+        json.dump(metadata, file)
+
+    with patch("predict.AutoTokenizer.from_pretrained"), \
+         patch("predict.AutoModelForSequenceClassification.from_pretrained"):
+
+        detector = DuplicateQuestionDetector(model_dir=model_dir)
+
+    assert detector.threshold == 0.35

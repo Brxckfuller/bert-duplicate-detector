@@ -1,7 +1,7 @@
 
 import json
 
-from config import MODEL_DIR
+from config import MODEL_DIR, DUPLICATE_THRESHOLD
 from train_bert import TRAINING_CONFIG
 
 with open("results/training_history.json") as file:
@@ -13,6 +13,8 @@ metadata = {
     **TRAINING_CONFIG,
     "best_epoch": best_epoch["epoch"],
     "best_validation_f1": best_epoch["val_f1"],
+    "inference_threshold": DUPLICATE_THRESHOLD,
+    "threshold_selection": "validation_f1",
 }
 
 output_path = MODEL_DIR / "training_config.json"

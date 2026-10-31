@@ -1,6 +1,7 @@
 
 import argparse
 from pathlib import Path
+import json
 
 import torch
 from transformers import (
@@ -13,12 +14,27 @@ from config import MODEL_DIR, MAX_LENGTH, DUPLICATE_THRESHOLD
 
 
 class DuplicateQuestionDetector:
+
     def __init__(
             self,
             model_dir=MODEL_DIR,
-            threshold=DUPLICATE_THRESHOLD,
+            threshold=None,
     ):
-        if not 0.0 <= threshold <= 1.0:
+        model_dir = Path(model_dir)
+
+        # Load the saved inference threshold if one was not provided
+        if threshold is None:
+            metadata_path = model_dir / "training_config.json"
+
+            if metadata_path.exists():
+                with open(metadata_path) as file:
+                    metadata = json.load(file)
+
+                threshold = metadata["inference_threshold"]
+            else:
+                threshold = DUPLICATE_THRESHOLD
+
+        if not isinstance(threshold, (int, float)) or not 0.0 <= threshold <= 1.0:
             raise ValueError("Threshold must be between 0 and 1.")
 
         self.threshold = threshold
