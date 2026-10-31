@@ -1,0 +1,220 @@
+{
+  "evaluation_type": "hand_constructed_contrastive_diagnostic",
+  "threshold": 0.15,
+  "overall": {
+    "total_groups": 16,
+    "total_pairs": 32,
+    "correct_pairs": 16,
+    "pair_accuracy": 0.5,
+    "both_correct_groups": 2,
+    "correctly_ordered_groups": 8
+  },
+  "category_summary": {
+    "entity": {
+      "groups": 4,
+      "equivalent_accuracy": 0.25,
+      "contrast_accuracy": 0.75,
+      "both_correct_rate": 0.0,
+      "correct_ordering_rate": 1.0
+    },
+    "negation": {
+      "groups": 4,
+      "equivalent_accuracy": 0.5,
+      "contrast_accuracy": 0.0,
+      "both_correct_rate": 0.0,
+      "correct_ordering_rate": 0.0
+    },
+    "numerical": {
+      "groups": 4,
+      "equivalent_accuracy": 1.0,
+      "contrast_accuracy": 0.0,
+      "both_correct_rate": 0.0,
+      "correct_ordering_rate": 0.5
+    },
+    "paraphrase": {
+      "groups": 4,
+      "equivalent_accuracy": 0.75,
+      "contrast_accuracy": 0.75,
+      "both_correct_rate": 0.5,
+      "correct_ordering_rate": 0.5
+    }
+  },
+  "group_results": [
+    {
+      "category": "numerical",
+      "positive_score": 0.5366,
+      "negative_score": 0.747,
+      "score_margin": -0.2104,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 1
+    },
+    {
+      "category": "numerical",
+      "positive_score": 0.8325,
+      "negative_score": 0.8746,
+      "score_margin": -0.0421,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 2
+    },
+    {
+      "category": "numerical",
+      "positive_score": 0.823,
+      "negative_score": 0.7705,
+      "score_margin": 0.0525,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": true,
+      "group_id": 3
+    },
+    {
+      "category": "numerical",
+      "positive_score": 0.8003,
+      "negative_score": 0.6107,
+      "score_margin": 0.1896,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": true,
+      "group_id": 4
+    },
+    {
+      "category": "negation",
+      "positive_score": 0.0039,
+      "negative_score": 0.9115,
+      "score_margin": -0.9076,
+      "positive_correct": false,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 5
+    },
+    {
+      "category": "negation",
+      "positive_score": 0.5809,
+      "negative_score": 0.8937,
+      "score_margin": -0.3128,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 6
+    },
+    {
+      "category": "negation",
+      "positive_score": 0.4062,
+      "negative_score": 0.8866,
+      "score_margin": -0.4804,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 7
+    },
+    {
+      "category": "negation",
+      "positive_score": 0.0033,
+      "negative_score": 0.9172,
+      "score_margin": -0.9139,
+      "positive_correct": false,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 8
+    },
+    {
+      "category": "entity",
+      "positive_score": 0.0543,
+      "negative_score": 0.0078,
+      "score_margin": 0.0465,
+      "positive_correct": false,
+      "negative_correct": true,
+      "both_correct": false,
+      "correct_ordering": true,
+      "group_id": 9
+    },
+    {
+      "category": "entity",
+      "positive_score": 0.0106,
+      "negative_score": 0.0026,
+      "score_margin": 0.008,
+      "positive_correct": false,
+      "negative_correct": true,
+      "both_correct": false,
+      "correct_ordering": true,
+      "group_id": 10
+    },
+    {
+      "category": "entity",
+      "positive_score": 0.9682,
+      "negative_score": 0.4134,
+      "score_margin": 0.5548,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": true,
+      "group_id": 11
+    },
+    {
+      "category": "entity",
+      "positive_score": 0.0398,
+      "negative_score": 0.0037,
+      "score_margin": 0.0361,
+      "positive_correct": false,
+      "negative_correct": true,
+      "both_correct": false,
+      "correct_ordering": true,
+      "group_id": 12
+    },
+    {
+      "category": "paraphrase",
+      "positive_score": 0.0077,
+      "negative_score": 0.0143,
+      "score_margin": -0.0066,
+      "positive_correct": false,
+      "negative_correct": true,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 13
+    },
+    {
+      "category": "paraphrase",
+      "positive_score": 0.3398,
+      "negative_score": 0.3403,
+      "score_margin": -0.0005,
+      "positive_correct": true,
+      "negative_correct": false,
+      "both_correct": false,
+      "correct_ordering": false,
+      "group_id": 14
+    },
+    {
+      "category": "paraphrase",
+      "positive_score": 0.8277,
+      "negative_score": 0.0256,
+      "score_margin": 0.8021,
+      "positive_correct": true,
+      "negative_correct": true,
+      "both_correct": true,
+      "correct_ordering": true,
+      "group_id": 15
+    },
+    {
+      "category": "paraphrase",
+      "positive_score": 0.2132,
+      "negative_score": 0.0231,
+      "score_margin": 0.1901,
+      "positive_correct": true,
+      "negative_correct": true,
+      "both_correct": true,
+      "correct_ordering": true,
+      "group_id": 16
+    }
+  ]
+}

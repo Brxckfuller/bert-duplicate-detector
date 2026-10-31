@@ -437,6 +437,47 @@ Reproducing the qualitative annotation summary additionally requires completing 
 
 Exact results may vary with hardware, dependency versions and random-number generation.
 
+## Exploratory Robustness Evaluation
+
+Two hand-constructed diagnostic evaluations were conducted using the existing DistilBERT checkpoint and its validation-selected inference threshold of 0.15. No retraining or threshold adjustment was performed.
+
+### Initial diagnostic evaluation
+
+| Category | Correct | Accuracy |
+|---|---:|---:|
+| Numerical differences | 0/4 | 0% |
+| Negation and logical contrasts | 0/4 | 0% |
+| Entity differences | 3/4 | 75% |
+| Paraphrases | 3/4 | 75% |
+| **Overall** | **6/16** | **37.5%** |
+
+### Contrastive evaluation
+
+Each of 16 groups contains an intended equivalent paraphrase and a meaning-changing contrast (32 pairs total).
+
+| Category | Equivalent correct | Contrast correct | Correct ordering |
+|---|---:|---:|---:|
+| Numerical | 4/4 | 0/4 | 2/4 |
+| Negation | 2/4 | 0/4 | 0/4 |
+| Entity | 1/4 | 3/4 | 4/4 |
+| Paraphrase | 3/4 | 3/4 | 2/4 |
+
+Overall pair accuracy was **16/32 (50.0%)**. Both predictions were correct in **2/16 groups**, and the intended equivalent received a higher score in **8/16 groups**.
+
+### Interpretation and limitations
+
+The results suggest potential weaknesses in numerical sensitivity and negation. These are exploratory, hand-constructed diagnostics, not independently validated or representative benchmarks. Some examples overlap conceptually, and semantic labels may be debatable. The checkpoint and threshold remained unchanged.
+
+### Reproduction
+
+```bash
+python robustness_evaluation.py
+python contrastive_robustness.py
+python -m pytest -q
+```
+
+Results are saved under `results/`. Automated tests validate benchmark structure and metric calculations.
+
 ## Limitations
 
 - **Dataset size:** Only 5,000 question pairs were used, limiting statistical precision and representativeness.

@@ -1,0 +1,159 @@
+{
+  "evaluation_type": "hand_constructed_diagnostic",
+  "threshold": 0.15,
+  "total_cases": 16,
+  "correct": 6,
+  "accuracy": 0.375,
+  "category_summary": {
+    "numerical_difference": {
+      "correct": 0,
+      "total": 4,
+      "accuracy": 0.0
+    },
+    "negation": {
+      "correct": 0,
+      "total": 4,
+      "accuracy": 0.0
+    },
+    "entity_difference": {
+      "correct": 3,
+      "total": 4,
+      "accuracy": 0.75
+    },
+    "paraphrase": {
+      "correct": 3,
+      "total": 4,
+      "accuracy": 0.75
+    }
+  },
+  "case_results": [
+    {
+      "case_id": 1,
+      "category": "numerical_difference",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.8667,
+      "correct": false
+    },
+    {
+      "case_id": 2,
+      "category": "numerical_difference",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.6294,
+      "correct": false
+    },
+    {
+      "case_id": 3,
+      "category": "numerical_difference",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.6107,
+      "correct": false
+    },
+    {
+      "case_id": 4,
+      "category": "numerical_difference",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.6992,
+      "correct": false
+    },
+    {
+      "case_id": 5,
+      "category": "negation",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.8866,
+      "correct": false
+    },
+    {
+      "case_id": 6,
+      "category": "negation",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.4501,
+      "correct": false
+    },
+    {
+      "case_id": 7,
+      "category": "negation",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.5327,
+      "correct": false
+    },
+    {
+      "case_id": 8,
+      "category": "negation",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.8937,
+      "correct": false
+    },
+    {
+      "case_id": 9,
+      "category": "entity_difference",
+      "expected_label": 0,
+      "predicted_label": 0,
+      "duplicate_score": 0.0078,
+      "correct": true
+    },
+    {
+      "case_id": 10,
+      "category": "entity_difference",
+      "expected_label": 0,
+      "predicted_label": 0,
+      "duplicate_score": 0.0026,
+      "correct": true
+    },
+    {
+      "case_id": 11,
+      "category": "entity_difference",
+      "expected_label": 0,
+      "predicted_label": 1,
+      "duplicate_score": 0.4134,
+      "correct": false
+    },
+    {
+      "case_id": 12,
+      "category": "entity_difference",
+      "expected_label": 0,
+      "predicted_label": 0,
+      "duplicate_score": 0.0037,
+      "correct": true
+    },
+    {
+      "case_id": 13,
+      "category": "paraphrase",
+      "expected_label": 1,
+      "predicted_label": 1,
+      "duplicate_score": 0.5299,
+      "correct": true
+    },
+    {
+      "case_id": 14,
+      "category": "paraphrase",
+      "expected_label": 1,
+      "predicted_label": 1,
+      "duplicate_score": 0.3398,
+      "correct": true
+    },
+    {
+      "case_id": 15,
+      "category": "paraphrase",
+      "expected_label": 1,
+      "predicted_label": 1,
+      "duplicate_score": 0.8277,
+      "correct": true
+    },
+    {
+      "case_id": 16,
+      "category": "paraphrase",
+      "expected_label": 1,
+      "predicted_label": 0,
+      "duplicate_score": 0.0898,
+      "correct": false
+    }
+  ]
+}
