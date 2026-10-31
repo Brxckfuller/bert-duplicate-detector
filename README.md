@@ -1,15 +1,15 @@
 
 # BERT Duplicate Question Detector
 
-An end-to-end NLP project for identifying semantically duplicate questions using fine-tuned DistilBERT, benchmarked against a TF-IDF and logistic regression baseline.
+An end to end NLP project for identifying semantically duplicate questions using fine-tuned DistilBERT, benchmarked against a TF-IDF and logistic regression baseline.
 
-The project covers data preparation, leakage-aware splitting, transformer fine-tuning, threshold optimisation, held-out evaluation, error analysis, local inference and automated testing.
+The project covers data preparation, leakage aware splitting, transformer fine-tuning, threshold optimisation, held-out evaluation, error analysis, local inference and automated testing.
 
 ## Overview
 
 Duplicate question detection is a binary classification task: determining whether two questions express the same underlying intent despite differences in wording or sentence structure.
 
-This project compares traditional text classification with transformer-based semantic classification using the Quora Question Pairs (QQP) dataset.
+This project compares traditional text classification with transformer based semantic classification using the Quora Question Pairs (QQP) dataset.
 
 **Models:**
 - TF-IDF + logistic regression
